@@ -1,15 +1,30 @@
 import io
 import os
 import re
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
 import pandas as pd
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 from google import genai
 from google.genai import types
 
-# Yahan apni dono keys paste karein
+# --- API KEYS SETUP ---
 TELEGRAM_BOT_TOKEN = "8806559022:AAG33EUsuXzHsrVrOPevNvbE-CO8ePw6CZQ"
 GEMINI_API_KEY = "AQ.Ab8RN6LjBuiMqy7yQ6TB4JK64kKAQQlxtvyUNUKij-_XDSW5bg"
+
+# Dummy Web Server (Taaki Render free web service bina error ke 24 ghante Live rahe)
+class SimpleHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+        self.wfile.write(b"Bot is Running Perfectly!")
+
+def run_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+    server.serve_forever()
 
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 user_mode = {}
@@ -123,6 +138,9 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Error aayi: {str(e)}\nKripya saaf photo dobara bhejein.")
 
 def main():
+    # Start web server thread for Render port binding
+    threading.Thread(target=run_server, daemon=True).start()
+    
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("packet", set_packet_mode))
