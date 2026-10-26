@@ -1,3 +1,6 @@
+git add bot.py
+git commit -m "Add dummy port server for render"
+git push origin main
 import os
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
