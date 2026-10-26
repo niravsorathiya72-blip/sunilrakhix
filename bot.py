@@ -1,6 +1,5 @@
 import io
 import os
-import re
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import pandas as pd
@@ -10,10 +9,10 @@ from google import genai
 from google.genai import types
 
 # --- API KEYS SETUP ---
-TELEGRAM_BOT_TOKEN = "8806559022:AAG33EUsuXzHsrVrOPevNvbE-CO8ePw6CZQ"
-GEMINI_API_KEY = "AQ.Ab8RN6LjBuiMqy7yQ6TB4JK64kKAQQlxtvyUNUKij-_XDSW5bg"
+TELEGRAM_BOT_TOKEN = "8806559022:AAG33EUsuXzHsrVrOPeVNvbE-CO8ePW6CZQ"
+GEMINI_API_KEY = "AQ.Ab8RN6ICDLbODPXFTjhbP6EfgEM6ELLCpnsjyRAZ1KmcAAWWcw"
 
-# Dummy Web Server (Taaki Render free web service bina error ke 24 ghante Live rahe)
+# Dummy Web Server (Render free web service ko 24 ghante Live rakhne ke liye)
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
@@ -26,6 +25,7 @@ def run_server():
     server = HTTPServer(('0.0.0.0', port), SimpleHandler)
     server.serve_forever()
 
+# Client initialize
 ai_client = genai.Client(api_key=GEMINI_API_KEY)
 user_mode = {}
 
@@ -56,39 +56,39 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text("⏳ Photo scan ho rahi hai, kripya intezar karein...")
 
-    photo_file = await update.message.photo[-1].get_file()
-    image_bytes = await photo_file.download_as_bytearray()
-
-    if mode == "packet":
-        cols = ["ART_NO", "COLOR", "PACKET_QTY", "QTY_BOX", "RATE"]
-        rule_desc = (
-            "Extract rows with exact columns: ART_NO, COLOR, PACKET_QTY, QTY_BOX, RATE.\n"
-            "- If quantity is written like '2 x 144' or '2 * 144', PACKET_QTY is 2 and QTY_BOX is 144.\n"
-            "- If only single qty is given (e.g. 144), put it in QTY_BOX and put 1 in PACKET_QTY.\n"
-            "- If color is not specified, leave COLOR as '-'.\n"
-        )
-    else:
-        cols = ["ART_NO", "COLOR", "PACKET_QTY", "RATE"]
-        rule_desc = (
-            "Extract rows with exact columns: ART_NO, COLOR, PACKET_QTY, RATE.\n"
-            "- If quantity is written like '2 x 144', take packet count (2) as PACKET_QTY.\n"
-            "- If color is not specified, leave COLOR as '-'.\n"
-        )
-
-    prompt = f"""
-    You are an expert at reading handwritten bills and printed invoices.
-    Extract all items from this image following these instructions:
-    {rule_desc}
-
-    CRITICAL RULES:
-    1. If any handwritten number, art number, or rate is blur or unclear, mark that specific field as 'UNCLEAR'.
-    2. Output format must strictly be TSV (Tab Separated Values) text only.
-    3. The first line must be headers: {'\t'.join(cols)}
-    4. Do not enclose the output in code blocks or add markdown intros. Just raw TSV lines.
-    5. If there are unclear entries, add a line starting with 'DOUBT:' at the bottom explaining which line has doubt.
-    """
-
     try:
+        photo_file = await update.message.photo[-1].get_file()
+        image_bytes = await photo_file.download_as_bytearray()
+
+        if mode == "packet":
+            cols = ["ART_NO", "COLOR", "PACKET_QTY", "QTY_BOX", "RATE"]
+            rule_desc = (
+                "Extract rows with exact columns: ART_NO, COLOR, PACKET_QTY, QTY_BOX, RATE.\n"
+                "- If quantity is written like '2 x 144' or '2 * 144', PACKET_QTY is 2 and QTY_BOX is 144.\n"
+                "- If only single qty is given (e.g. 144), put it in QTY_BOX and put 1 in PACKET_QTY.\n"
+                "- If color is not specified, leave COLOR as '-'.\n"
+            )
+        else:
+            cols = ["ART_NO", "COLOR", "PACKET_QTY", "RATE"]
+            rule_desc = (
+                "Extract rows with exact columns: ART_NO, COLOR, PACKET_QTY, RATE.\n"
+                "- If quantity is written like '2 x 144', take packet count (2) as PACKET_QTY.\n"
+                "- If color is not specified, leave COLOR as '-'.\n"
+            )
+
+        prompt = f"""
+        You are an expert at reading handwritten bills and printed invoices.
+        Extract all items from this image following these instructions:
+        {rule_desc}
+
+        CRITICAL RULES:
+        1. If any handwritten number, art number, or rate is blur or unclear, mark that specific field as 'UNCLEAR'.
+        2. Output format must strictly be TSV (Tab Separated Values) text only.
+        3. The first line must be headers: {'\t'.join(cols)}
+        4. Do not enclose the output in code blocks or add markdown intros. Just raw TSV lines.
+        5. If there are unclear entries, add a line starting with 'DOUBT:' at the bottom explaining which line has doubt.
+        """
+
         response = ai_client.models.generate_content(
             model='gemini-2.5-flash',
             contents=[
@@ -138,9 +138,7 @@ async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(f"❌ Error aayi: {str(e)}\nKripya saaf photo dobara bhejein.")
 
 def main():
-    # Start web server thread for Render port binding
     threading.Thread(target=run_server, daemon=True).start()
-    
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("packet", set_packet_mode))
