@@ -4,3 +4,6 @@ aiohttp
 pandas
 openpyxl
 pillow
+pyTelegramBotAPI
+google-generativeai
+Pillow
