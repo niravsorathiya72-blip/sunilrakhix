@@ -1,3 +1,26 @@
+import os
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+
+# Render માટે ડમી વેબ સર્વર
+class HealthCheckHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Bot is alive!")
+
+    def log_message(self, format, *args):
+        return  # બિનજરૂરી લોગ બંધ રાખવા માટે
+
+def run_web_server():
+    # Render આપોઆપ PORT એન્વાયર્નમેન્ટ વેરીએબલ આપે છે
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(("0.0.0.0", port), HealthCheckHandler)
+    server.serve_forever()
+
+# બોટ ચાલુ થાય એ પહેલાં બેકગ્રાઉન્ડ થ્રેડમાં સર્વર સ્ટાર્ટ થશે
+threading.Thread(target=run_web_server, daemon=True).start()
 import io
 import json
 import base64
