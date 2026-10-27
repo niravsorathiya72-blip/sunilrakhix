@@ -16,35 +16,31 @@ class SimpleHealthHandler(BaseHTTPRequestHandler):
         self.wfile.write(b"Bot service is healthy and active!")
 
     def log_message(self, format, *args):
-        return  # Server console logs clean rakhne ke liye
+        return
 
 def start_http_server():
     port = int(os.environ.get("PORT", 8080))
     server = HTTPServer(("0.0.0.0", port), SimpleHealthHandler)
     server.serve_forever()
 
-# Render ke port scan timeout ko bypass karne ke liye daemon thread me start karein
 threading.Thread(target=start_http_server, daemon=True).start()
 
 # ==============================================================================
-# 2. API KEYS CONFIGURATION
+# 2. BOT & GEMINI API CONFIGURATION
 # ==============================================================================
-# Yahan apni dono keys double quotes ke andar paste karein:
-TELEGRAM_BOT_TOKEN = "PASTE_YOUR_TELEGRAM_BOT_TOKEN_HERE"
-GEMINI_API_KEY = "PASTE_YOUR_GEMINI_API_KEY_HERE"
+TELEGRAM_BOT_TOKEN = "8806559022:AAG33EUsuXzHsrVrOPevNvbE-C08ePw6CZQ"
+GEMINI_API_KEY = "AQ.Ab8RN6KXlej5SMT9p1NyeeyAbtAC-Sf33hwNG9y9TdiDdHpadg"
 
-# Bot Initialise
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
 
-# Gemini AI Initialise (Safe block taaki initialization par crash na ho)
 gemini_model = None
 try:
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
     gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-    print("Gemini API successfully configured.")
+    print("Gemini API configured successfully.")
 except Exception as error:
-    print(f"Gemini Init Notice: {error}")
+    print(f"Gemini Init Warning: {error}")
 
 # ==============================================================================
 # 3. TELEGRAM BOT HANDLERS
@@ -53,26 +49,24 @@ except Exception as error:
 def send_welcome(message):
     welcome_text = (
         "Namaste!\n\n"
-        "Sunil Rakhi automation bot successfully active ho gaya hai.\n"
-        "Aap mujhe kisi bhi product, packet ya box label ki photo bhej sakte hain."
+        "SUNILRAKHIEXCEL Bot khaddam db b-najah.\n"
+        "Sift lia ay soura dyal product ola label bach t-t-analyse b Gemini."
     )
     bot.reply_to(message, welcome_text)
 
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
     if not gemini_model:
-        bot.reply_to(message, "Gemini API key configure nahi hui hai. Kripya key verify karein.")
+        bot.reply_to(message, "Gemini API key ma khaddamax mezian. Khellik m3ana.")
         return
 
     try:
-        bot.reply_to(message, "Photo mil gayi hai! Gemini AI se analyze ho raha hai, kripya wait karein...")
+        bot.reply_to(message, "Waslat l-photo! Gemini kay-analyse l-ma3loumat db, sber chwya...")
 
-        # Highest resolution photo download karein
         file_id = message.photo[-1].file_id
         file_info = bot.get_file(file_id)
         downloaded_file = bot.download_file(file_info.file_path)
 
-        # Image load karein
         image = Image.open(io.BytesIO(downloaded_file))
 
         prompt = (
@@ -82,26 +76,26 @@ def handle_photo(message):
         )
 
         response = gemini_model.generate_content([prompt, image])
-        bot.reply_to(message, response.text if response.text else "Koi readable details detect nahi hui.")
+        bot.reply_to(message, response.text if response.text else "Ma lqina hta chi ma3loumat f l-photo.")
 
     except Exception as e:
-        bot.reply_to(message, f"Photo process karne me error aayi: {str(e)}")
+        bot.reply_to(message, f"Mochkil f l-processing: {str(e)}")
 
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     if not gemini_model:
-        bot.reply_to(message, f"Message received: {message.text}")
+        bot.reply_to(message, f"Wselli l-message: {message.text}")
         return
 
     try:
         response = gemini_model.generate_content(message.text)
         bot.reply_to(message, response.text)
     except Exception as e:
-        bot.reply_to(message, f"Error: {str(e)}")
+        bot.reply_to(message, f"Mochkil: {str(e)}")
 
 # ==============================================================================
-# 4. BOT POLLING (SABSE LAST)
+# 4. BOT POLLING
 # ==============================================================================
 if __name__ == "__main__":
-    print("Bot polling started successfully...")
+    print("Bot polling started...")
     bot.infinity_polling(timeout=60, long_polling_timeout=30)
