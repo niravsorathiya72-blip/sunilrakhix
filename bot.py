@@ -28,7 +28,7 @@ threading.Thread(target=start_http_server, daemon=True).start()
 # ==============================================================================
 # 2. BOT & GEMINI API CONFIGURATION
 # ==============================================================================
-TELEGRAM_BOT_TOKEN = "8806559022:AAG33EUsuXzHsrVrOPevNvbE-C08ePw6CZQ"
+TELEGRAM_BOT_TOKEN = "8934435754:AAHxFWaP4d4cUAlN4DviFpHMrka1hJo5V4w"
 GEMINI_API_KEY = "AQ.Ab8RN6KXlej5SMT9p1NyeeyAbtAC-Sf33hwNG9y9TdiDdHpadg"
 
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
