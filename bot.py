@@ -28,7 +28,7 @@ threading.Thread(target=start_http_server, daemon=True).start()
 # ==============================================================================
 # 2. BOT & GEMINI API CONFIGURATION
 # ==============================================================================
-TELEGRAM_BOT_TOKEN = "8934435754:AAHxFWaP4d4cUAlN4DviFpHMrka1hJo5V4w"
+TELEGRAM_BOT_TOKEN = "8806559022:AAG33EUsuXzHsrVrOPevNvbE-C08ePw6CZQ"
 GEMINI_API_KEY = "AQ.Ab8RN6KXlej5SMT9p1NyeeyAbtAC-Sf33hwNG9y9TdiDdHpadg"
 
 bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
@@ -38,31 +38,39 @@ try:
     import google.generativeai as genai
     genai.configure(api_key=GEMINI_API_KEY)
     gemini_model = genai.GenerativeModel("gemini-1.5-flash")
-    print("Gemini API configured successfully.")
+    print("Gemini API successfully configured.")
 except Exception as error:
     print(f"Gemini Init Warning: {error}")
 
 # ==============================================================================
-# 3. TELEGRAM BOT HANDLERS
+# 3. TELEGRAM BOT HANDLERS (GUJARATI + HINDI + ENGLISH)
 # ==============================================================================
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     welcome_text = (
-        "Namaste!\n\n"
-        "SUNILRAKHIEXCEL Bot khaddam db b-najah.\n"
-        "Sift lia ay soura dyal product ola label bach t-t-analyse b Gemini."
+        "🙏 **Namaste / નમસ્તે!**\n\n"
+        "**SUNILRAKHIEXCEL Bot** is ready.\n\n"
+        "🔹 **English:** Please send a clear photo of the product, label, or packet.\n"
+        "🔹 **ગુજરાતી:** કૃપા કરીને પ્રોડક્ટ, પેકેટ અથવા બોક્સ લેબલનો સ્પષ્ટ ફોટો મોકલો.\n"
+        "🔹 **हिंदी:** कृपया प्रोडक्ट, पैकेट या बॉक्स लेबल का साफ़ फोटो भेजें."
     )
-    bot.reply_to(message, welcome_text)
+    bot.reply_to(message, welcome_text, parse_mode="Markdown")
 
 @bot.message_handler(content_types=['photo'])
 def handle_photo(message):
+    wait_msg = (
+        "⏳ **Processing...**\n"
+        "• Photo received! Analyzing details...\n"
+        "• ફોટો મળી ગયો છે! વિગતો ચકાસાઈ રહી છે...\n"
+        "• फोटो मिल गया है! डिटेल्स चेक हो रही हैं..."
+    )
+    bot.reply_to(message, wait_msg, parse_mode="Markdown")
+
     if not gemini_model:
-        bot.reply_to(message, "Gemini API key ma khaddamax mezian. Khellik m3ana.")
+        bot.reply_to(message, "⚠️ API Configuration error. Please check Gemini API Key.")
         return
 
     try:
-        bot.reply_to(message, "Waslat l-photo! Gemini kay-analyse l-ma3loumat db, sber chwya...")
-
         file_id = message.photo[-1].file_id
         file_info = bot.get_file(file_id)
         downloaded_file = bot.download_file(file_info.file_path)
@@ -71,27 +79,32 @@ def handle_photo(message):
 
         prompt = (
             "Analyze this product/rakhi packaging image carefully. "
-            "Extract: Art No, Packet Quantity, Box Quantity, Rate, and Color. "
-            "Format the output cleanly line by line."
+            "Extract the following details accurately:\n"
+            "- Art No / Code\n"
+            "- Packet Quantity\n"
+            "- Box Quantity\n"
+            "- Rate / Price\n"
+            "- Color / Design\n\n"
+            "Provide the extracted output in clean text with Gujarati, Hindi, and English labels so it is very easy to read."
         )
 
         response = gemini_model.generate_content([prompt, image])
-        bot.reply_to(message, response.text if response.text else "Ma lqina hta chi ma3loumat f l-photo.")
+        bot.reply_to(message, response.text if response.text else "Details detect kavaledu / વિગતો મળી નથી.")
 
     except Exception as e:
-        bot.reply_to(message, f"Mochkil f l-processing: {str(e)}")
+        bot.reply_to(message, f"❌ Error: {str(e)}")
 
 @bot.message_handler(func=lambda message: True)
 def handle_text(message):
     if not gemini_model:
-        bot.reply_to(message, f"Wselli l-message: {message.text}")
+        bot.reply_to(message, f"Received: {message.text}")
         return
 
     try:
         response = gemini_model.generate_content(message.text)
         bot.reply_to(message, response.text)
     except Exception as e:
-        bot.reply_to(message, f"Mochkil: {str(e)}")
+        bot.reply_to(message, f"Error: {str(e)}")
 
 # ==============================================================================
 # 4. BOT POLLING
